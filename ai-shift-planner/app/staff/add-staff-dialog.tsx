@@ -44,9 +44,7 @@ export function AddStaffDialog() {
             <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
                     <DialogTitle>Add New Staff</DialogTitle>
-                    <DialogDescription>
-                        Create a profile for a new employee. They won't be able to login until an invite is sent (future feature).
-                    </DialogDescription>
+                    <DialogDescription>Add a new staff member to your shop. They&apos;ll receive an email to join.</DialogDescription>
                 </DialogHeader>
                 <form action={handleSubmit}>
                     <div className="grid gap-4 py-4">

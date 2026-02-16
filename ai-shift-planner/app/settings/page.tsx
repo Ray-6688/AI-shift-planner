@@ -2,18 +2,21 @@ import Link from 'next/link'
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import { ShopSettingsForm } from './shop-form'
+import { Database } from '@/utils/supabase/database.types'
+import { SupabaseClient } from '@supabase/supabase-js'
 
 export default async function SettingsPage() {
-    const supabase = await createClient()
+    const supabase = await createClient() as SupabaseClient<Database>
 
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) redirect('/login')
 
-    const { data: shop } = await supabase
+    const { data } = await supabase
         .from('shops')
         .select('*')
         .eq('owner_id', user.id)
         .single()
+    const shop = data as Database['public']['Tables']['shops']['Row'] | null
 
     if (!shop) redirect('/onboarding')
 

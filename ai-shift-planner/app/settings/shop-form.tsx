@@ -14,6 +14,7 @@ import {
 import { updateShopSettings } from './actions'
 import { toast } from 'sonner'
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function ShopSettingsForm({ shop }: { shop: any }) {
 
     async function handleSubmit(formData: FormData) {
@@ -30,7 +31,7 @@ export function ShopSettingsForm({ shop }: { shop: any }) {
             <CardHeader>
                 <CardTitle>General Settings</CardTitle>
                 <CardDescription>
-                    Manage your shop's basic details.
+                    Update your shop&apos;s basic information.
                 </CardDescription>
             </CardHeader>
             <form action={handleSubmit}>

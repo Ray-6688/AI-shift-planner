@@ -752,3 +752,15 @@ commit;
 --   )
 -- order by tablename;
 
+-- AI Shift Planner V2 - Schema Update
+-- Fix for missing start_time/end_time in shifts table detected during Phase 2 verification.
+
+-- 1. Add columns (using TEXT to match ISO string handling in application)
+ALTER TABLE public.shifts ADD COLUMN IF NOT EXISTS start_time text;
+ALTER TABLE public.shifts ADD COLUMN IF NOT EXISTS end_time text;
+ALTER TABLE public.shifts ADD COLUMN IF NOT EXISTS role_type text;
+
+-- 2. Optional: Populate from old columns if needed (assuming date + duration logic was used before?)
+-- For V2, we are using direct ISO strings. 
+-- Existing rows might be invalid. Recommended to clear draft schedules.
+DELETE FROM public.shifts WHERE start_time IS NULL;

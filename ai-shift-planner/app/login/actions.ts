@@ -23,7 +23,9 @@ export async function login(formData: FormData) {
     redirect('/')
 }
 
-export async function signup(formData: FormData) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export async function signup(_formData: FormData) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const supabase = createClient()
 
     // This is a placeholder. In Phase 1 we only use seeded users.

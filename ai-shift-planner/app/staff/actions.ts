@@ -10,11 +10,12 @@ export async function addStaff(formData: FormData) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return { error: 'Unauthorized' }
 
-    const { data: shop } = await supabase
+    const { data } = await supabase
         .from('shops')
         .select('id')
         .eq('owner_id', user.id)
         .single()
+    const shop = data as { id: string } | null
 
     if (!shop) return { error: 'Shop not found' }
 
@@ -47,8 +48,9 @@ export async function addStaff(formData: FormData) {
     if (!name || !email) return { error: 'Name and Email required' }
 
     // Insert fake user profile
-    const { data: newUser, error: userError } = await supabase
-        .from('users')
+    const { data: newUser, error: userError } = await (supabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .from('users') as any)
         .insert({
             email,
             name,
@@ -64,8 +66,9 @@ export async function addStaff(formData: FormData) {
     }
 
     // Insert staff record
-    const { error: staffError } = await supabase
-        .from('staff')
+    const { error: staffError } = await (supabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .from('staff') as any)
         .insert({
             shop_id: shop.id,
             user_id: newUser.id,

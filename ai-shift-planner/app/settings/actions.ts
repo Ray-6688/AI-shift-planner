@@ -17,8 +17,9 @@ export async function updateShopSettings(formData: FormData) {
     if (!id) return { error: 'Shop ID missing' }
 
     // 2. Update shop
-    const { error } = await supabase
-        .from('shops')
+    const { error } = await (supabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .from('shops') as any)
         .update({ name, timezone })
         .eq('id', id)
         .eq('owner_id', user.id) // Security check

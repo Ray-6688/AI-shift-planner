@@ -4,11 +4,10 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
 
-export default function LoginPage({
-    searchParams,
-}: {
-    searchParams: { message: string, error: string }
+export default async function LoginPage(props: {
+    searchParams: Promise<{ message: string, error: string }>
 }) {
+    const searchParams = await props.searchParams
     return (
         <div className="flex items-center justify-center min-h-screen bg-neutral-100 dark:bg-neutral-900 p-4">
             <Card className="w-full max-w-md shadow-lg border-neutral-200 dark:border-neutral-800">
@@ -62,7 +61,7 @@ export default function LoginPage({
                     </form>
                 </CardContent>
                 <CardFooter className="flex flex-col gap-2 text-center text-sm text-muted-foreground bg-neutral-50 dark:bg-neutral-950/50 rounded-b-lg p-6">
-                    <p>Don't have an account?</p>
+                    <p>Don&apos;t have an account?</p>
                     <p>Contact your manager to get set up.</p>
                 </CardFooter>
             </Card>

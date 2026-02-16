@@ -2,9 +2,11 @@ import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import { Database } from '@/utils/supabase/database.types'
+import { SupabaseClient } from '@supabase/supabase-js'
 
 export default async function Dashboard() {
-  const supabase = await createClient()
+  const supabase = await createClient() as SupabaseClient<Database>
 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) {
@@ -18,7 +20,10 @@ export default async function Dashboard() {
     .eq('owner_id', user.id)
     .single()
 
-  if (!shop) {
+  // Force type check
+  const typedShop = shop as Database['public']['Tables']['shops']['Row'] | null
+
+  if (!typedShop) {
     redirect('/onboarding')
   }
 
@@ -37,7 +42,7 @@ export default async function Dashboard() {
         <div className="flex items-center gap-4">
           <div className="text-sm">
             <span className="text-muted-foreground mr-2">Shop:</span>
-            <span className="font-medium">{shop.name}</span>
+            <span className="font-medium">{typedShop.name}</span>
           </div>
           <form action={signOut}>
             <Button variant="outline" size="sm">Sign Out</Button>

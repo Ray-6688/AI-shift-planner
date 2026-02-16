@@ -10,9 +10,13 @@ import {
 } from "@/components/ui/table"
 import { AddStaffDialog } from './add-staff-dialog'
 
+import { Database } from '@/utils/supabase/database.types'
+import { SupabaseClient } from '@supabase/supabase-js'
+
 export default async function StaffPage() {
-    const supabase = await createClient()
-    const { data: staff } = await supabase.from('staff').select('*').order('name')
+    const supabase = await createClient() as SupabaseClient<Database>
+    const { data } = await supabase.from('staff').select('*').order('name')
+    const staff = data as Database['public']['Tables']['staff']['Row'][] | null
 
     return (
         <div className="flex flex-col min-h-screen">
@@ -42,8 +46,8 @@ export default async function StaffPage() {
                                     <TableCell className="font-medium">{person.name}</TableCell>
                                     <TableCell>
                                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${person.status === 'Trainee'
-                                                ? 'bg-yellow-100 text-yellow-800'
-                                                : 'bg-blue-100 text-blue-800'
+                                            ? 'bg-yellow-100 text-yellow-800'
+                                            : 'bg-blue-100 text-blue-800'
                                             }`}>
                                             {person.status}
                                         </span>
