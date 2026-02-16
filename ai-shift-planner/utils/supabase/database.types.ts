@@ -215,7 +215,9 @@ export interface Database {
                     id: string
                     shop_id: string
                     week_start_date: string // YYYY-MM-DD
-                    status: 'draft' | 'published'
+                    status: 'draft' | 'ai_generated' | 'edited' | 'published'
+                    created_by: string | null
+                    published_at: string | null
                     created_at: string | null
                     updated_at: string | null
                 }
@@ -223,7 +225,9 @@ export interface Database {
                     id?: string
                     shop_id: string
                     week_start_date: string
-                    status?: 'draft' | 'published'
+                    status?: 'draft' | 'ai_generated' | 'edited' | 'published'
+                    created_by?: string | null
+                    published_at?: string | null
                     created_at?: string | null
                     updated_at?: string | null
                 }
@@ -231,7 +235,9 @@ export interface Database {
                     id?: string
                     shop_id?: string
                     week_start_date?: string
-                    status?: 'draft' | 'published'
+                    status?: 'draft' | 'ai_generated' | 'edited' | 'published'
+                    created_by?: string | null
+                    published_at?: string | null
                     created_at?: string | null
                     updated_at?: string | null
                 }
@@ -240,26 +246,47 @@ export interface Database {
                 Row: {
                     id: string
                     schedule_id: string
+                    shift_period_id: string | null
                     staff_id: string | null
+                    date: string // YYYY-MM-DD
                     start_time: string // ISO timestamp, or date + time
                     end_time: string // ISO timestamp
+                    duration_hours: number
                     role_type: string | null
+                    ai_confidence: number | null
+                    ai_reasoning: string | null
+                    created_at: string | null
+                    updated_at: string | null
                 }
                 Insert: {
                     id?: string
                     schedule_id: string
+                    shift_period_id?: string | null
                     staff_id?: string | null
+                    date: string
                     start_time: string
                     end_time: string
+                    duration_hours: number
                     role_type?: string | null
+                    ai_confidence?: number | null
+                    ai_reasoning?: string | null
+                    created_at?: string | null
+                    updated_at?: string | null
                 }
                 Update: {
                     id?: string
                     schedule_id?: string
+                    shift_period_id?: string | null
                     staff_id?: string | null
+                    date?: string
                     start_time?: string
                     end_time?: string
+                    duration_hours?: number
                     role_type?: string | null
+                    ai_confidence?: number | null
+                    ai_reasoning?: string | null
+                    created_at?: string | null
+                    updated_at?: string | null
                 }
             }
             staff_availability: {
@@ -269,8 +296,9 @@ export interface Database {
                     day_of_week: number
                     start_time: string
                     end_time: string
-                    is_unavailable: boolean
-                    reason: string | null
+                    is_available: boolean
+                    created_at: string | null
+                    updated_at: string | null
                 }
                 Insert: {
                     id?: string
@@ -278,8 +306,9 @@ export interface Database {
                     day_of_week: number
                     start_time: string
                     end_time: string
-                    is_unavailable?: boolean
-                    reason?: string | null
+                    is_available?: boolean
+                    created_at?: string | null
+                    updated_at?: string | null
                 }
                 Update: {
                     id?: string
@@ -287,8 +316,9 @@ export interface Database {
                     day_of_week?: number
                     start_time?: string
                     end_time?: string
-                    is_unavailable?: boolean
-                    reason?: string | null
+                    is_available?: boolean
+                    created_at?: string | null
+                    updated_at?: string | null
                 }
             }
         }

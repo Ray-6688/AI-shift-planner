@@ -135,30 +135,28 @@ export async function saveShift(shift: {
             .eq('day_of_week', dbDay)
             .single()
 
-        // Force cast availability to any to bypass strict type checks
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const avail = availability as any as { start_time: string, end_time: string, is_unavailable: boolean } | null
+        const avail = availability as any as { start_time: string, end_time: string, is_available: boolean } | null
 
-        // If no record, assume available? Or unavailable? 
-        // Let's assume available for MVP unless explicitly set to unavailable. 
-        // But if record exists, strict check.
+        // If no record exists, assume available (MVP).
+        // If record exists, enforce availability window.
         if (avail) {
-            if (avail.is_unavailable) {
+            if (!avail.is_available) {
                 throw new Error('Staff is marked as unavailable on this day.')
             }
 
-            // Check times
-            // Create Date objects for comparison on the same arbitrary date (e.g. 1970-01-01)
-            const availStart = parseISO(`1970-01-01T${avail.start_time}`)
-            const availEnd = parseISO(`1970-01-01T${avail.end_time}`)
-
-            const shiftStartParts = shift.start_time.split('T')[1].split(':') // HH:mm:ss
+            // Check times using minutes-since-midnight for reliable comparison
+            const shiftStartParts = shift.start_time.split('T')[1].split(':')
             const shiftEndParts = shift.end_time.split('T')[1].split(':')
+            const shiftStartMins = parseInt(shiftStartParts[0]) * 60 + parseInt(shiftStartParts[1])
+            const shiftEndMins = parseInt(shiftEndParts[0]) * 60 + parseInt(shiftEndParts[1])
 
-            const shiftStart = new Date(1970, 0, 1, parseInt(shiftStartParts[0]), parseInt(shiftStartParts[1]))
-            const shiftEnd = new Date(1970, 0, 1, parseInt(shiftEndParts[0]), parseInt(shiftEndParts[1]))
+            const availStartParts = avail.start_time.slice(0, 5).split(':')
+            const availEndParts = avail.end_time.slice(0, 5).split(':')
+            const availStartMins = parseInt(availStartParts[0]) * 60 + parseInt(availStartParts[1])
+            const availEndMins = parseInt(availEndParts[0]) * 60 + parseInt(availEndParts[1])
 
-            if (shiftStart < availStart || shiftEnd > availEnd) {
+            if (shiftStartMins < availStartMins || shiftEndMins > availEndMins) {
                 throw new Error(`Shift is outside of staff availability (${avail.start_time} - ${avail.end_time}).`)
             }
         }
@@ -322,21 +320,18 @@ export async function generateSchedule(weekStartDate: string) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const staffList = staffListData as any as Database['public']['Tables']['staff']['Row'][] | null
 
+    if (!staffList || staffList.length === 0) {
+        return { success: false, error: 'No staff available' }
+    }
+
+    // Scope availability to only the staff in this shop
+    const staffIds = staffList.map(s => s.id)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: availabilityData } = await (supabase.from('staff_availability') as any).select('*')
-    // force cast to match expected structure with date strings if needed, though they are times here.
+    const { data: availabilityData } = await (supabase.from('staff_availability') as any)
+        .select('*')
+        .in('staff_id', staffIds)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const allAvailability = availabilityData as any as Database['public']['Tables']['staff_availability']['Row'][] | null
-
-    if (!staffList || staffList.length === 0) {
-        console.error('No staff available')
-        return { success: false, error: 'No staff available' }
-    }
-
-    if (!staffList || staffList.length === 0) {
-        console.error('No staff available')
-        return { success: false, error: 'No staff available' }
-    }
 
     // 4. Generate Shifts
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -373,21 +368,27 @@ export async function generateSchedule(weekStartDate: string) {
                 // Find available staff
                 // We need to check if the staff is available on this dbDay and covers the period time.
 
-                // 1. Filter staff valid for this specific slot
+                // Filter staff valid for this specific slot
                 const availableCandidates = staffList.filter(staff => {
-                    // Find availability for this staff on this day
                     const avail = allAvailability?.find(a => a.staff_id === staff.id && a.day_of_week === dbDay)
-                    if (!avail || !avail.is_unavailable) return false
 
-                    // Check time overlap
-                    // Period: period.start_time, period.end_time (HH:MM)
-                    // Avail: avail.start_time, avail.end_time (HH:MM:SS)
+                    // No availability record → assume available (MVP behavior)
+                    if (!avail) return true
 
-                    const pStart = parseInt(period.start_time.replace(':', ''))
-                    const pEnd = parseInt(period.end_time.replace(':', ''))
+                    // Explicitly marked as not available
+                    if (!avail.is_available) return false
 
-                    const aStart = parseInt(avail.start_time.slice(0, 5).replace(':', ''))
-                    const aEnd = parseInt(avail.end_time.slice(0, 5).replace(':', ''))
+                    // Check that the shift period fits within the availability window
+                    // Use minutes-since-midnight for reliable comparison
+                    const pStartParts = period.start_time.split(':')
+                    const pEndParts = period.end_time.split(':')
+                    const pStart = parseInt(pStartParts[0]) * 60 + parseInt(pStartParts[1])
+                    const pEnd = parseInt(pEndParts[0]) * 60 + parseInt(pEndParts[1])
+
+                    const aStartParts = avail.start_time.slice(0, 5).split(':')
+                    const aEndParts = avail.end_time.slice(0, 5).split(':')
+                    const aStart = parseInt(aStartParts[0]) * 60 + parseInt(aStartParts[1])
+                    const aEnd = parseInt(aEndParts[0]) * 60 + parseInt(aEndParts[1])
 
                     return pStart >= aStart && pEnd <= aEnd
                 })

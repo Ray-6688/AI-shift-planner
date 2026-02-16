@@ -61,7 +61,11 @@ export function ScheduleGrid({ weekStartDate, initialSchedule, staff }: Schedule
         const overId = over.id as string // 'yyyy-MM-dd'
 
         if (type === 'new-shift') {
-            // Dropped a Staff Member -> Create a new Shift
+            if (!initialSchedule?.id) {
+                toast.error('Generate a schedule first before adding shifts.')
+                return
+            }
+
             const staffId = active.data.current?.staffId
             const dateStr = overId // The day column ID
 
@@ -71,9 +75,8 @@ export function ScheduleGrid({ weekStartDate, initialSchedule, staff }: Schedule
 
             startTransition(async () => {
                 try {
-                    // Optimistic update could go here
                     await saveShift({
-                        schedule_id: initialSchedule?.id, // Should exist if we are viewing it
+                        schedule_id: initialSchedule.id,
                         staff_id: staffId,
                         start_time: startTime,
                         end_time: endTime,
@@ -81,8 +84,8 @@ export function ScheduleGrid({ weekStartDate, initialSchedule, staff }: Schedule
                     })
                     toast.success('Shift created')
                 } catch (e) {
-                    console.error(e)
-                    toast.error('Failed to create shift')
+                    const msg = e instanceof Error ? e.message : 'Failed to create shift'
+                    toast.error(msg)
                 }
             })
         }
@@ -92,17 +95,27 @@ export function ScheduleGrid({ weekStartDate, initialSchedule, staff }: Schedule
 
     const handleGenerate = () => {
         startTransition(async () => {
-            const res = await generateSchedule(weekStartDate)
-            if (res.success) toast.success(`Generated ${res.count} shifts`)
-            else toast.error(res.error || 'Failed')
+            try {
+                const res = await generateSchedule(weekStartDate)
+                if (res.success) toast.success(`Generated ${res.count} shifts`)
+                else toast.error(res.error || 'Failed to generate schedule')
+            } catch (e) {
+                const msg = e instanceof Error ? e.message : 'Failed to generate schedule'
+                toast.error(msg)
+            }
         })
     }
 
     const handlePublish = () => {
         if (!initialSchedule) return
         startTransition(async () => {
-            await publishSchedule(initialSchedule.id)
-            toast.success('Schedule Published!')
+            try {
+                await publishSchedule(initialSchedule.id)
+                toast.success('Schedule Published!')
+            } catch (e) {
+                const msg = e instanceof Error ? e.message : 'Failed to publish schedule'
+                toast.error(msg)
+            }
         })
     }
 
