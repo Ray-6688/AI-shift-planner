@@ -51,14 +51,17 @@ export function ScheduleGrid({ weekStartDate, initialSchedule, staff }: Schedule
         setActiveDragItem(event.active.data.current)
     }
 
-    async function handleDragEnd(event: DragEndEvent) {
+    function handleDragEnd(event: DragEndEvent) {
         const { active, over } = event
         setActiveDragItem(null)
 
         if (!over) return
 
+        // Only accept drops on day-column droppables
+        if (over.data.current?.type !== 'day-column') return
+
         const type = active.data.current?.type
-        const overId = over.id as string // 'yyyy-MM-dd'
+        const targetDate = over.id as string // 'yyyy-MM-dd'
 
         if (type === 'new-shift') {
             if (!initialSchedule?.id) {
@@ -67,11 +70,8 @@ export function ScheduleGrid({ weekStartDate, initialSchedule, staff }: Schedule
             }
 
             const staffId = active.data.current?.staffId
-            const dateStr = overId // The day column ID
-
-            // Default times for drag-drop
-            const startTime = `${dateStr}T09:00:00`
-            const endTime = `${dateStr}T17:00:00`
+            const startTime = `${targetDate}T09:00:00`
+            const endTime = `${targetDate}T17:00:00`
 
             startTransition(async () => {
                 try {
@@ -88,9 +88,41 @@ export function ScheduleGrid({ weekStartDate, initialSchedule, staff }: Schedule
                     toast.error(msg)
                 }
             })
-        }
+        } else if (type === 'shift') {
+            if (!initialSchedule?.id) return
+            if (initialSchedule.status === 'published') {
+                toast.error('Cannot edit a published schedule.')
+                return
+            }
 
-        // Handle moving existing shift (later)
+            const shift = active.data.current?.shift
+            if (!shift) return
+
+            // Extract existing date from shift start_time
+            const currentDate = shift.start_time.split('T')[0]
+            if (currentDate === targetDate) return // Dropped on same day — no-op
+
+            // Preserve time-of-day, swap to target date
+            const startTimePart = shift.start_time.split('T')[1]
+            const endTimePart = shift.end_time.split('T')[1]
+
+            startTransition(async () => {
+                try {
+                    await saveShift({
+                        id: shift.id,
+                        schedule_id: initialSchedule.id,
+                        staff_id: shift.staff_id,
+                        start_time: `${targetDate}T${startTimePart}`,
+                        end_time: `${targetDate}T${endTimePart}`,
+                        role_type: shift.role_type
+                    })
+                    toast.success('Shift moved')
+                } catch (e) {
+                    const msg = e instanceof Error ? e.message : 'Failed to move shift'
+                    toast.error(msg)
+                }
+            })
+        }
     }
 
     const handleGenerate = () => {
@@ -187,10 +219,18 @@ export function ScheduleGrid({ weekStartDate, initialSchedule, staff }: Schedule
             <DragOverlay>
                 {activeDragItem ? (
                     activeDragItem.type === 'shift' ? (
-                        <ShiftCard
-                            shift={activeDragItem.shift}
-                            isOverlay
-                        />
+                        (() => {
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                            const sm = staff.find((s: any) => s.id === activeDragItem.shift?.staff_id)
+                            return (
+                                <ShiftCard
+                                    shift={activeDragItem.shift}
+                                    staffName={sm?.name}
+                                    roleColor={sm?.color}
+                                    isOverlay
+                                />
+                            )
+                        })()
                     ) : (
                         <StaffDragItem
                             // eslint-disable-next-line @typescript-eslint/no-explicit-any
